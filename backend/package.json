@@ -22,6 +22,7 @@
   "license": "MIT",
   "dependencies": {
     "@azure/core-client": "^1.9.2",
+    "@azure/cosmos": "^4.2.0",
     "@azure/openai": "^2.0.0",
     "@types/node-fetch": "^2.6.12",
     "cors": "^2.8.5",

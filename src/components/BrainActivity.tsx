@@ -2,19 +2,38 @@
 import { motion, animate } from "framer-motion";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Bluetooth } from "lucide-react";
+import { WifiIcon } from "lucide-react";
 
 const BrainActivity = () => {
   const [selectedActivity, setSelectedActivity] = useState<string>("working");
   const [selectedLocation, setSelectedLocation] = useState<string>("office");
-  const [flowIntensity, setFlowIntensity] = useState(24);
+  const [flowIntensity, setFlowIntensity] = useState(0);
   const isConnected = true;
 
   // Periodically update flow intensity
   useEffect(() => {
     const interval = setInterval(() => {
-      const newIntensity = Math.floor(Math.random() * (85 - 15) + 15); // Random value between 15-85
-      setFlowIntensity(newIntensity);
+      fetch('http://localhost:3000/api/getMostRecentRecord', {
+          method: 'POST',
+          credentials: 'include', // Add this if you enabled credentials in corsOptions
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          console.log('Most Recent Record:', data);
+          const updateIntensity = Math.floor(data['flowIntensityValues'][0])
+          setFlowIntensity(updateIntensity);
+          //no intensity data, generate random intensity
+          if (updateIntensity === 0) {
+            const newIntensity = Math.floor(Math.random() * (85 - 15) + 15); // Random value between 15-85
+            setFlowIntensity(newIntensity);
+          }
+        })
+        .catch(error => { 
+          console.error('Error fetching most recent record:', error);
+        });
     }, 3000);
 
     return () => clearInterval(interval);
@@ -29,7 +48,7 @@ const BrainActivity = () => {
         <h3 className="text-sm font-semibold">Brain Activity Monitor</h3>
         {isConnected && (
           <div className="flex items-center gap-1 text-xs text-accent">
-            <Bluetooth className="h-3 w-3" />
+            <WifiIcon className="h-3 w-3" />
             <span>Connected</span>
           </div>
         )}

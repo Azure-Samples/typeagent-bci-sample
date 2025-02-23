@@ -14,6 +14,7 @@ import { handleDataAnalysisAction } from './handlers/dataAnalysisHandler.js';
 import { handleReportGeneratorAction } from './handlers/reportGeneratorHandler.js';
 import { handleMindfulnessMeditationAction } from './handlers/mindfulnessMeditationHandler.js';
 import { handleTaskAutomationAction } from './handlers/taskAutomationHandler.js';
+import { getMostRecentDocument } from './utils/cosmosdb.js';
 
 // Convert ESM module paths to filesystem paths
 const __filename = fileURLToPath(import.meta.url);
@@ -35,8 +36,18 @@ console.log('Environment variables loaded:', {
 // Initialize Express application
 const app = express();
 
+// CORS configuration
+const corsOptions = {
+  origin: 'http://localhost:8080', // Your Vite frontend URL
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true // Required for credentials mode 'include'
+};
+
+// Apply CORS middleware before your routes
+app.use(cors(corsOptions));
+
 // Middleware setup
-app.use(cors());  // Enable Cross-Origin Resource Sharing
 app.use(express.json());  // Parse JSON request bodies
 
 /**
@@ -124,6 +135,29 @@ app.post('/api/task', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Task automation endpoint error:', error);
     res.status(500).json({ error: 'Failed to process task request' });
+  }
+});
+
+/**
+ * Get Most Recent Record Endpoint
+ * Retrieves the most recent record for a specific user from Cosmos DB
+ * POST /api/getMostRecentRecord
+ * Request body: none
+ * Response: { record: object } or { message: string } if no record found
+ */
+app.post('/api/getMostRecentRecord', async (req: Request, res: Response) => {
+  try {
+    const userId = "A6BC96AF-E53F-4C57-8D5A-88F1D7BCB1AD";
+    const document = await getMostRecentDocument(userId);
+    
+    if (document) {
+      res.json(document);
+    } else {
+      res.status(404).json({ message: "No records found" });
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: "Failed to fetch record" });
   }
 });
 
