@@ -1,7 +1,6 @@
-
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import DynamicSidebar from "@/components/DynamicSidebar";
-import { Brain, FileText, Layout, Cpu, MessageSquare, Settings } from "lucide-react";
+import { Brain, Heart, FileText, Layout, Cpu, MessageSquare, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const actionTiles = [
@@ -46,6 +45,13 @@ const actionTiles = [
     icon: Settings,
     color: "bg-gray-500/10 text-gray-500",
     path: "/settings"
+  },
+  {
+    title: "Golf Stroke Analysis",
+    description: "Analyze flow intensity and heart rate changes around golf strokes",
+    icon: Heart,
+    color: "bg-teal-500/10 text-teal-500",
+    path: "/golf-analysis"
   },
 ];
 

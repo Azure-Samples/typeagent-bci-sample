@@ -189,6 +189,28 @@ app.post('/api/getFlowIntensityData', (async (req: Request, res: Response) => {
   }
 }) as RequestHandler);
 
+/**
+ * Get Azure Maps Service Token Endpoint
+ * Provides a token for secure access to Azure Maps services
+ * GET /api/getAzureMapsToken
+ * Request body: none
+ * Response: { token: string }
+ */
+app.get('/api/getAzureMapsToken', (async (req: Request, res: Response) => {
+  try {
+    const azureMapsToken = process.env.AZURE_MAPS_SUBSCRIPTION_KEY;
+
+    if (!azureMapsToken) {
+      return res.status(500).json({ error: 'Azure Maps subscription key is not configured' });
+    }
+
+    res.json({ token: azureMapsToken });
+  } catch (error) {
+    console.error('Error generating Azure Maps token:', error);
+    res.status(500).json({ error: 'Failed to generate Azure Maps token' });
+  }
+}) as RequestHandler);
+
 // Start the server
 const port = process.env.PORT || 3000;
 app.listen(port, () => {

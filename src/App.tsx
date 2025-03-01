@@ -12,7 +12,7 @@ import MindfulnessMeditation from "./pages/MindfulnessMeditation";
 import TaskAutomation from "./pages/TaskAutomation";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
-
+import GolfAnalysis from "./pages/GolfAnalysis";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -29,6 +29,7 @@ const App = () => (
           <Route path="/mindfulness-meditation" element={<MindfulnessMeditation />} />
           <Route path="/task-automation" element={<TaskAutomation />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/golf-analysis" element={<GolfAnalysis />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
