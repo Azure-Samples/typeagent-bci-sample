@@ -29,7 +29,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "node-fetch": "^3.3.2",
-    "openai": "^3.3.0"
+    "openai": "^4.86.2"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
