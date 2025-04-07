@@ -835,7 +835,7 @@ const DataAnalysis = () => {
   const [dailyInsights, setDailyInsights] = useState<DailyInsights | null>(null);
   const [currentFlowValue, setCurrentFlowValue] = useState(50);
   const [currentHeartRate, setCurrentHeartRate] = useState(75);
-  const [timelineData, setTimelineData] = useState<Array<{ timestamp: string; flowValue: number; heartRateValue: number }>>([]);
+  const [timelineData, setTimelineData] = useState<Array<{ timestamp: string; flowValue: number; heartRateValue: number, frustratedValue: number, excitedValue: number, calmValue: number}>>([]);
   const [dreamInsights, setDreamInsights] = useState<DreamInsight | null>(null);
 
   const addAction = (type: string, description: string) => {
@@ -859,30 +859,16 @@ const DataAnalysis = () => {
       return;
     }
     
-    // console.log("Updating timeline data for day:", day);
-    // console.log("Raw flow data count:", rawFlowData.length);
-    // console.log("Raw heart rate data count:", rawHeartRateData.length);
-    
     setIsTimelineLoading(true);
     
-    // Short timeout to show loading state
     setTimeout(() => {
       try {
-        // Create the time points based on the selected day and interval
-        const minutesInterval = 5;
-        
         const selectedDate = new Date(day);
-        console.log("Selected date for timeline:", selectedDate);
-        
-        // Set to beginning of day
         const dayStart = new Date(selectedDate);
         dayStart.setHours(0, 0, 0, 0);
-        
-        // Set to end of day
         const dayEnd = new Date(selectedDate);
         dayEnd.setHours(23, 59, 59, 999);
         
-        // Filter data for selected day
         const dayFlowData = rawFlowData.filter(point => {
           const pointDate = new Date(point.timestamp);
           return pointDate.toDateString() === selectedDate.toDateString();
@@ -893,78 +879,91 @@ const DataAnalysis = () => {
           return pointDate.toDateString() === selectedDate.toDateString();
         });
         
-        // console.log("Day flow data count:", dayFlowData.length);
-        // console.log("Day heart rate data count:", dayHeartData.length);
-        
-        // Check if we have enough data points
         const hasEnoughData = dayFlowData.length >= 3 && dayHeartData.length >= 3;
         
-        // If no data, try to generate some test data points
         if (!hasEnoughData) {
-          console.log("Not enough data found for timeline, generating fallback data");
           const fallbackData = generateFallbackTimelineData(selectedDate);
-          console.log("Generated fallback data points:", fallbackData.length);
           setTimelineData(fallbackData);
           setIsTimelineLoading(false);
           return;
         }
 
-        // Create timeline points at regular intervals
-        const timePoints: Array<{ timestamp: string; flowValue: number; heartRateValue: number }> = [];
+        const timePoints: Array<{
+          timestamp: string;
+          flowValue: number;
+          heartRateValue: number;
+          frustratedValue: number; // Add frustrated value
+          excitedValue: number; // Add excited value
+          calmValue: number; // Add calm value
+        }> = [];
         
-        // For 5-minute intervals, use a larger time window for data aggregation
-        // to smooth out the data but maintain precision
-        const timeWindowMultiplier = 1.5;
-        
-        // Generate points exactly on 5-minute boundaries for grid display
         for (
           let currentTime = new Date(dayStart); 
           currentTime <= dayEnd;
-          currentTime.setMinutes(currentTime.getMinutes() + minutesInterval)
+          currentTime.setMinutes(currentTime.getMinutes() + 5)
         ) {
-          // Ensure time is set exactly on 5-minute boundaries
-          const minutes = currentTime.getMinutes();
-          const roundedMinutes = Math.floor(minutes / 5) * 5;
-          currentTime.setMinutes(roundedMinutes, 0, 0);
-          
-          // Find data points close to this interval
-          const timeWindow = minutesInterval * 60 * 1000 * timeWindowMultiplier; // Convert to milliseconds with multiplier
-          const currentTimeMs = currentTime.getTime();
-          
-          // Use real data
-          // Find flow data within this time window
           const relevantFlowData = dayFlowData.filter(point => {
             const pointTime = new Date(point.timestamp).getTime();
-            return Math.abs(pointTime - currentTimeMs) <= timeWindow / 2;
+            return Math.abs(pointTime - currentTime.getTime()) <= 15000; // 15 seconds window
           });
           
-          // Find heart rate data within this time window
           const relevantHeartData = dayHeartData.filter(point => {
             const pointTime = new Date(point.timestamp).getTime();
-            return Math.abs(pointTime - currentTimeMs) <= timeWindow / 2;
+            return Math.abs(pointTime - currentTime.getTime()) <= 15000; // 15 seconds window
+          });
+
+          const relevantFrustratedData = rawFrustratedData.filter(point => {
+            const pointTime = new Date(point.timestamp).getTime();
+            return Math.abs(pointTime - currentTime.getTime()) <= 15000; // 15 seconds window
           });
           
-          // Calculate average values
+          const relevantExcitedData = rawExcitedData.filter(point => {
+            const pointTime = new Date(point.timestamp).getTime();
+            return Math.abs(pointTime - currentTime.getTime()) <= 15000; // 15 seconds window
+          });
+
+          const relevantCalmData = rawCalmData.filter(point => {
+            const pointTime = new Date(point.timestamp).getTime();
+            return Math.abs(pointTime - currentTime.getTime()) <= 15000; // 15 seconds window
+          });
+          
           const avgFlow = relevantFlowData.length > 0
             ? relevantFlowData.reduce((sum, point) => sum + point.value, 0) / relevantFlowData.length
             : 50; // Default value
-            
+          
           const avgHeart = relevantHeartData.length > 0
             ? relevantHeartData.reduce((sum, point) => sum + point.value, 0) / relevantHeartData.length
             : 75; // Default value
           
-          timePoints.push({
+          // Calculate emotional indicators
+          const avgFrustrated = relevantFrustratedData.length > 0
+            ? relevantFrustratedData.reduce((sum, point) => sum + point.value, 0) / relevantFrustratedData.length
+            : 0;
+          
+          const avgExcited = relevantExcitedData.length > 0
+            ? relevantExcitedData.reduce((sum, point) => sum + point.value, 0) / relevantExcitedData.length
+            : 0;
+          
+          const avgCalm = relevantCalmData.length > 0
+            ? relevantCalmData.reduce((sum, point) => sum + point.value, 0) / relevantCalmData.length
+            : 0;
+          
+          const timePoint = {
             timestamp: currentTime.toISOString(),
             flowValue: avgFlow,
-            heartRateValue: avgHeart
-          });
+            heartRateValue: avgHeart,
+            frustratedValue: avgFrustrated,
+            excitedValue: avgExcited,
+            calmValue: avgCalm
+          };
+          
+          timePoints.push(timePoint);
         }
         
-        console.log("Generated timeline points:", timePoints.length);
         setTimelineData(timePoints);
+        // console.log(timePoints);
       } catch (error) {
         console.error("Error generating timeline data:", error);
-        // Generate fallback data in case of error
         const fallbackData = generateFallbackTimelineData(new Date(day));
         setTimelineData(fallbackData);
       } finally {
@@ -975,7 +974,7 @@ const DataAnalysis = () => {
   
   // Generate fallback timeline data if real data is insufficient
   const generateFallbackTimelineData = (date: Date) => {
-    const timePoints: Array<{ timestamp: string; flowValue: number; heartRateValue: number }> = [];
+    const timePoints: Array<{ timestamp: string; flowValue: number; heartRateValue: number, frustratedValue: number, excitedValue: number, calmValue: number }> = [];
     
     // Set to beginning of day
     const dayStart = new Date(date);
@@ -1061,7 +1060,10 @@ const DataAnalysis = () => {
           timePoints.push({
             timestamp: currentTime.toISOString(),
             flowValue: Math.round(Math.min(Math.max(sampleFlow, 0), 100)),
-            heartRateValue: Math.round(Math.min(Math.max(sampleHeartRate, 50), 100))
+            heartRateValue: Math.round(Math.min(Math.max(sampleHeartRate, 50), 100)),
+            frustratedValue: Math.round(getFrustration(sampleFlow, sampleHeartRate)),
+            excitedValue: Math.round(getExcitement(sampleFlow,sampleHeartRate)),
+            calmValue: Math.round(getCalm(sampleFlow,sampleHeartRate))
           });
         }
       }
@@ -1069,6 +1071,30 @@ const DataAnalysis = () => {
     
     return timePoints;
   };
+
+  // Calculate frustration based on flow and heart rate
+const getFrustration = (flow: number, heart: number): number => {
+  // Higher heart rate and lower flow indicates frustration
+  if (flow < 40 && heart > 80) return 85;
+  if (flow < 60 && heart > 70) return 60;
+  return Math.max(0, Math.min(100, 100 - flow + (heart - 70)));
+};
+
+// Calculate excitement based on flow and heart rate
+const getExcitement = (flow: number, heart: number): number => {
+  // High flow and elevated heart rate indicates excitement
+  if (flow > 80 && heart > 75) return 85;
+  if (flow > 60 && heart > 65) return 60;
+  return Math.max(0, Math.min(100, flow * 0.8 + (heart - 60) * 0.4));
+};
+
+// Calculate calm based on flow and heart rate
+const getCalm = (flow: number, heart: number): number => {
+  // Moderate flow and lower heart rate indicates calm
+  if (flow > 40 && flow < 80 && heart < 70) return 85;
+  if (heart < 75) return 60;
+  return Math.max(0, Math.min(100, 100 - (heart - 50)));
+};
 
   const handleDatasetChange = (value: Dataset) => {
     setSelectedDataset(value);
@@ -1190,7 +1216,7 @@ const DataAnalysis = () => {
         }
         
       } catch (error) {
-        console.error('Error fetching data:', error);
+        // console.error('Error fetching data:', error);
         toast({
           title: "Error",
           description: "Failed to fetch data",
@@ -1592,7 +1618,7 @@ const DataAnalysis = () => {
                                 type="monotone"
                                 dataKey="frustratedValue"
                                 name="Frustration"
-                                stroke="#FFA000" // Orange for Frustration
+                                stroke="#FF0000" // Red for Frustration
                                 strokeWidth={2}
                                 dot={false}
                               />
@@ -1600,7 +1626,7 @@ const DataAnalysis = () => {
                                 type="monotone"
                                 dataKey="excitedValue"
                                 name="Excitement"
-                                stroke="#FFDA63" // Yellow for Excitement
+                                stroke="#00FF63" // Green for Excitement
                                 strokeWidth={2}
                                 dot={false}
                               />
@@ -1654,22 +1680,11 @@ const DataAnalysis = () => {
                                 />
                               ) : (
                                 <>
-                                  <EmotionRange
-                                    frustratedIndicatorValue={dailyInsights.frustratedIndicatorValue}
-                                    excitedIndicatorValue={dailyInsights.excitedIndicatorValue}
-                                    calmIndicatorValue={dailyInsights.calmIndicatorValue}
-                                    flowStats={dailyInsights.flowIntensity}
-                                    heartRateStats={dailyInsights.heartRate}
-                                    correlation={dailyInsights.correlation}
-                                    width={150}
-                                    height={150}
-                                    customDescription={`F:${dailyInsights.frustratedIndicatorValue}% E:${dailyInsights.excitedIndicatorValue}% C:${dailyInsights.calmIndicatorValue}%`}
-                                  />
                                   <div className="mt-4 w-full">
                                     <DayGradient 
                                       timePoints={timelineData} 
-                                      width={250}
-                                      height={80}
+                                      width={200}
+                                      height={200}
                                     />
                                   </div>
                                 </>
@@ -1752,9 +1767,9 @@ const DataAnalysis = () => {
               )}
 
               <div className="flex flex-col items-center space-y-2 border-t border-b py-4 border-sidebar-border">
-                <h3 className="text-lg font-medium">Data Similarity Analysis</h3>
+                <h3 className="text-lg font-medium">Data Analysis</h3>
                 <p className="text-sm text-muted-foreground text-center mb-2">
-                  Compare flow and heart rate patterns to find which days had similar brain activity
+                  Compare flow and heart rate patterns
                 </p>
                 <Button 
                   onClick={runSimilarityAnalysis}

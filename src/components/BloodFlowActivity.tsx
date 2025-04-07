@@ -133,12 +133,6 @@ const BloodFlowActivity = () => {
         <div className="border-t border-sidebar-border pt-4">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-sm font-medium">Emotion Analysis</h4>
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="h-6 text-xs"
-            >
-            </Button>
           </div>
           <EmotionTimelineBar
             flowIntensity={flowIntensity}

@@ -8,6 +8,9 @@ interface TimePoint {
   timestamp: string;
   flowValue: number;
   heartRateValue: number;
+  frustratedValue: number;
+  excitedValue: number;
+  calmValue: number;
 }
 
 interface EmotionTimelineProps {
@@ -48,30 +51,6 @@ const determineEmotion = (flowValue: number, heartRateValue: number): EmotionSta
     return "surprised";
   }
   return "neutral";
-};
-
-// Calculate frustration based on flow and heart rate
-const getFrustration = (flow: number, heart: number): number => {
-  // Higher heart rate and lower flow indicates frustration
-  if (flow < 40 && heart > 80) return 85;
-  if (flow < 60 && heart > 70) return 60;
-  return Math.max(0, Math.min(100, 100 - flow + (heart - 70)));
-};
-
-// Calculate excitement based on flow and heart rate
-const getExcitement = (flow: number, heart: number): number => {
-  // High flow and elevated heart rate indicates excitement
-  if (flow > 80 && heart > 75) return 85;
-  if (flow > 60 && heart > 65) return 60;
-  return Math.max(0, Math.min(100, flow * 0.8 + (heart - 60) * 0.4));
-};
-
-// Calculate calm based on flow and heart rate
-const getCalm = (flow: number, heart: number): number => {
-  // Moderate flow and lower heart rate indicates calm
-  if (flow > 40 && flow < 80 && heart < 70) return 85;
-  if (heart < 75) return 60;
-  return Math.max(0, Math.min(100, 100 - (heart - 50)));
 };
 
 const formatTime = (dateString: string): string => {
@@ -171,13 +150,13 @@ const EmotionTimeline: React.FC<EmotionTimelineProps> = ({
 
   // Early validation of input data
   if (!timePoints || !Array.isArray(timePoints) || timePoints.length === 0) {
-    console.log("EmotionTimeline: No timeline data available");
+    // console.log("EmotionTimeline: No timeline data available");
     return <div className="text-center text-sm text-muted-foreground">No timeline data available</div>;
   }
 
   // Do all the data processing in useMemo to optimize performance and avoid re-calculations
   const { validHours, hourlyData, hasAnyValidData, hourStats } = useMemo(() => {
-    console.log(`EmotionTimeline: Starting to process ${timePoints.length} data points`);
+    // console.log(`EmotionTimeline: Starting to process ${timePoints.length} data points`);
     
     // Helper function to check if a data point is valid and has meaningful values
     const isValidDataPoint = (point: TimePoint): boolean => {
@@ -185,7 +164,7 @@ const EmotionTimeline: React.FC<EmotionTimelineProps> = ({
       
       // Ensure timestamp is valid
       if (!isValidDateString(point.timestamp)) {
-        console.log(`EmotionTimeline: Skipping point with invalid timestamp: ${point.timestamp}`);
+        // console.log(`EmotionTimeline: Skipping point with invalid timestamp: ${point.timestamp}`);
         return false;
       }
       
@@ -201,18 +180,18 @@ const EmotionTimeline: React.FC<EmotionTimelineProps> = ({
       
       // Reject data points with exactly the default values, as these are likely placeholder data
       if (point.flowValue === DEFAULT_FLOW_VALUE && point.heartRateValue === DEFAULT_HEART_RATE) {
-        console.log(`EmotionTimeline: Rejecting point with default values: flow=${point.flowValue}, heart=${point.heartRateValue}`);
+        // console.log(`EmotionTimeline: Rejecting point with default values: flow=${point.flowValue}, heart=${point.heartRateValue}`);
         return false;
       }
       
       // Also reject if only one value is exactly at the default
       if (point.flowValue === DEFAULT_FLOW_VALUE) {
-        console.log(`EmotionTimeline: Rejecting point with default flow value=${point.flowValue}`);
+        // console.log(`EmotionTimeline: Rejecting point with default flow value=${point.flowValue}`);
         return false;
       }
       
       if (point.heartRateValue === DEFAULT_HEART_RATE) {
-        console.log(`EmotionTimeline: Rejecting point with default heart rate=${point.heartRateValue}`);
+        // console.log(`EmotionTimeline: Rejecting point with default heart rate=${point.heartRateValue}`);
         return false;
       }
       
@@ -221,7 +200,7 @@ const EmotionTimeline: React.FC<EmotionTimelineProps> = ({
           isNaN(point.flowValue) || 
           point.flowValue < MIN_FLOW_VALUE || 
           point.flowValue > MAX_FLOW_VALUE) {
-        console.log(`EmotionTimeline: Invalid flow value: ${point.flowValue}`);
+        // console.log(`EmotionTimeline: Invalid flow value: ${point.flowValue}`);
         return false;
       }
       
@@ -230,7 +209,7 @@ const EmotionTimeline: React.FC<EmotionTimelineProps> = ({
           isNaN(point.heartRateValue) || 
           point.heartRateValue < MIN_HEART_RATE || 
           point.heartRateValue > MAX_HEART_RATE) {
-        console.log(`EmotionTimeline: Invalid heart rate value: ${point.heartRateValue}`);
+        // console.log(`EmotionTimeline: Invalid heart rate value: ${point.heartRateValue}`);
         return false;
       }
       
@@ -242,14 +221,14 @@ const EmotionTimeline: React.FC<EmotionTimelineProps> = ({
     
     // Log all data points for debugging
     timePoints.forEach((point, index) => {
-      console.log(`EmotionTimeline: Point ${index}: timestamp=${point.timestamp}, flow=${point.flowValue}, heart=${point.heartRateValue}`);
+      // console.log(`EmotionTimeline: Point ${index}: timestamp=${point.timestamp}, flow=${point.flowValue}, heart=${point.heartRateValue}`);
       
       if (isValidDataPoint(point)) {
         validPoints.push(point);
       }
     });
     
-    console.log(`EmotionTimeline: Filtered to ${validPoints.length} valid points`);
+    // console.log(`EmotionTimeline: Filtered to ${validPoints.length} valid points`);
     
     // Group valid timepoints by hour
     const hourlyGroups: Record<string, TimePoint[]> = {};
@@ -491,9 +470,9 @@ const EmotionTimeline: React.FC<EmotionTimelineProps> = ({
           
           flowSum += point.flowValue;
           heartRateSum += point.heartRateValue;
-          frustrationSum += getFrustration(point.flowValue, point.heartRateValue);
-          excitementSum += getExcitement(point.flowValue, point.heartRateValue);
-          calmSum += getCalm(point.flowValue, point.heartRateValue);
+          frustrationSum += point.frustratedValue;
+          excitementSum += point.excitedValue;
+          calmSum += point.calmValue;
           pointCount++;
         }
       }
@@ -671,9 +650,9 @@ const EmotionTimeline: React.FC<EmotionTimelineProps> = ({
                     const emotion = determineEmotion(point.flowValue, point.heartRateValue);
                     
                     // Calculate emotion indicators for EmotionRange
-                    const frustration = getFrustration(point.flowValue, point.heartRateValue);
-                    const excitement = getExcitement(point.flowValue, point.heartRateValue);
-                    const calm = getCalm(point.flowValue, point.heartRateValue);
+                    const frustration = point.frustratedValue; 
+                    const excitement = point.excitedValue;
+                    const calm = point.calmValue;
                     
                     // Determine if this cell is selected (only relevant in range mode)
                     const isSelected = visualizationMode === "range" && isCellSelected(hourKey, slotIndex);
