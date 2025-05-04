@@ -23,7 +23,7 @@ This is an experimental project that combines:
 
 ## 🏌️ Example use case (golf)
 
-https://github.com/user-attachments/assets/2c194c40-8046-43b3-9faf-adbae6f28023
+https://github.com/user-attachments/assets/4cd37b6e-10b8-40f2-9595-249587883411
 
 ## 🏗️ System Architecture
 
