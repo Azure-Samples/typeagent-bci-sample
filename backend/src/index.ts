@@ -14,6 +14,7 @@ import { handleDataAnalysisAction } from './handlers/dataAnalysisHandler.js';
 import { handleReportGeneratorAction } from './handlers/reportGeneratorHandler.js';
 import { handleMindfulnessMeditationAction } from './handlers/mindfulnessMeditationHandler.js';
 import { handleTaskAutomationAction } from './handlers/taskAutomationHandler.js';
+import { handleImageGenerationAction } from './handlers/imageGenerationHandler.js';
 import { getMostRecentDocument, getFlowIntensityData } from './utils/cosmosdb.js';
 
 // Convert ESM module paths to filesystem paths
@@ -38,7 +39,7 @@ const app = express();
 
 // CORS configuration
 const corsOptions = {
-  origin: 'http://localhost:8080', // Your Vite frontend URL
+  origin: 'http://localhost:4517', // Your Vite frontend URL
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true // Required for credentials mode 'include'
@@ -135,6 +136,26 @@ app.post('/api/task', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Task automation endpoint error:', error);
     res.status(500).json({ error: 'Failed to process task request' });
+  }
+});
+
+/**
+ * Image Generation Endpoint
+ * Generates AI images based on brain state and user prompts using Azure OpenAI DALL-E
+ * POST /api/image-generation
+ * Request body: { parameters: { userPrompt: string, brainState: BrainState } }
+ * Response: { imageUrl: string, prompt: string, timestamp: number, brainStateUsed: BrainState }
+ */
+app.post('/api/image-generation', async (req: Request, res: Response) => {
+  try {
+    const response = await handleImageGenerationAction(req.body);
+    res.json(response);
+  } catch (error) {
+    console.error('Image generation endpoint error:', error);
+    res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Failed to process image generation request',
+      details: error instanceof Error ? error.stack : undefined
+    });
   }
 });
 

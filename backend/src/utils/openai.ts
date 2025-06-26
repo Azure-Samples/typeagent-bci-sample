@@ -53,6 +53,19 @@ interface OpenAIAPIResponse {
   }>;
 }
 
+/**
+ * DALL-E API response structure for image generation
+ * @property created - Timestamp of response creation
+ * @property data - Array of generated images
+ */
+interface DALLEAPIResponse {
+  created: number;
+  data: Array<{
+    url: string;
+    revised_prompt?: string;
+  }>;
+}
+
 type FetchResponse = Response;
 
 /**
@@ -195,5 +208,116 @@ export async function callOpenAI(messages: OpenAIMessage[]): Promise<OpenAIRespo
   } catch (error) {
     console.error('Error calling OpenAI:', error);
     throw new Error('Failed to call OpenAI API');
+  }
+}
+
+/**
+ * Makes an API call to Azure OpenAI DALL-E for image generation
+ * 
+ * @param prompt - The text prompt for image generation
+ * @returns Promise resolving to a DALL-E API response
+ * @throws Error if API key is missing, API call fails, or max retries are reached
+ * 
+ * The function includes:
+ * - Environment variable validation using provided Azure OpenAI credentials
+ * - Comprehensive error logging
+ * - Automatic retry logic with exponential backoff
+ * - Response validation and transformation
+ */
+export async function callDALLE(prompt: string): Promise<DALLEAPIResponse> {
+  const apiKey = process.env.AZURE_OPENAI_KEY;
+  const endpoint = process.env.AZURE_OPENAI_ENDPOINT?.replace(/\/+$/, '') || '';
+  const apiVersion = process.env.API_VERSION || '2024-02-15-preview';
+
+  // Log configuration for debugging
+  console.log('DALL-E Configuration:', {
+    endpoint,
+    apiVersion,
+    hasApiKey: !!apiKey,
+    promptLength: prompt.length
+  });
+
+  // Validate API key and endpoint
+  if (!apiKey || !endpoint) {
+    throw new Error('Missing required Azure OpenAI configuration for DALL-E');
+  }
+
+  // Configure retry parameters
+  const maxRetries = 3;
+  let retryCount = 0;
+
+  // Construct DALL-E API endpoint URL
+  const url = `${endpoint}/openai/deployments/dall-e-3/images/generations?api-version=${apiVersion}`;
+  
+  console.log('DALL-E Request:', {
+    url,
+    hasApiKey: !!apiKey,
+    promptPreview: prompt.substring(0, 100) + (prompt.length > 100 ? '...' : '')
+  });
+
+  try {
+    let lastError: Error | null = null;
+    let response: FetchResponse | null = null;
+
+    // Implement retry loop with exponential backoff
+    while (retryCount < maxRetries) {
+      try {
+        console.log(`DALL-E Attempt ${retryCount + 1} of ${maxRetries}`);
+        
+        // Make API request
+        const fetchResponse = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'api-key': apiKey
+          },
+          body: JSON.stringify({
+            prompt: prompt,
+            n: 1,
+            size: "1024x1024",
+            quality: "standard",
+            style: "natural"
+          })
+        });
+        response = fetchResponse;
+
+        // Handle non-200 responses
+        if (!fetchResponse.ok) {
+          const errorText = await fetchResponse.text();
+          console.error('DALL-E API error:', {
+            status: fetchResponse.status,
+            statusText: fetchResponse.statusText,
+            error: errorText
+          });
+          throw new Error(`DALL-E API error: ${fetchResponse.status} ${fetchResponse.statusText}`);
+        }
+
+        // Parse and validate response
+        const data = await fetchResponse.json() as DALLEAPIResponse;
+        console.log('DALL-E Response:', {
+          created: data.created,
+          imageCount: data.data?.length || 0,
+          hasUrl: !!(data.data?.[0]?.url)
+        });
+
+        return data;
+      } catch (error) {
+        // Handle retry logic
+        lastError = error as Error;
+        retryCount++;
+        if (retryCount === maxRetries) {
+          console.error('DALL-E Max retries reached:', lastError);
+          throw lastError;
+        }
+        console.log(`DALL-E Retrying... (${retryCount}/${maxRetries})`);
+        // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+      }
+    }
+
+    throw new Error('Failed to call DALL-E API after all retries');
+  } catch (error) {
+    console.error('Error calling DALL-E:', error);
+    throw new Error('Failed to call DALL-E API');
   }
 }

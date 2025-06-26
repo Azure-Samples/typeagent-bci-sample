@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { WifiIcon } from "lucide-react";
 import EmotionRange from "@/components/ui/EmotionRange";
 import EmotionTimelineBar from "@/components/ui/EmotionTimelineBar";
+import EmotionAvatar from "@/components/ui/EmotionAvatar";
 
 const BloodFlowActivity = () => {
   const [selectedActivity, setSelectedActivity] = useState<string>("working");
@@ -11,7 +12,7 @@ const BloodFlowActivity = () => {
   const [flowIntensity, setFlowIntensity] = useState(0);
   const [heartRate, setHeartRate] = useState(75); // Default heart rate
   const isConnected = true;
-  const [displayMode, setDisplayMode] = useState<'emotion-timeline'>('emotion-range');
+  const [displayMode, setDisplayMode] = useState<'emotion-timeline' | 'emotion-range'>('emotion-range');
 
   // Calculate derived emotion values for RGB representation
   const getFrustratedValue = () => Math.min(100, Math.max(0, 
@@ -143,6 +144,25 @@ const BloodFlowActivity = () => {
             historySize={10}
             updateInterval={3000}
           />
+        </div>
+
+        {/* Emotional State Avatar */}
+        <div className="border-t border-sidebar-border pt-4">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-sm font-medium">Emotional State</h4>
+          </div>
+          <div className="flex justify-center">
+            <EmotionAvatar
+              flowIntensity={flowIntensity}
+              heartRate={heartRate}
+              frustratedIndicatorValue={getFrustratedValue()}
+              excitedIndicatorValue={getExcitedValue()}
+              calmIndicatorValue={getCalmValue()}
+              width={120}
+              height={120}
+              showLabel={true}
+            />
+          </div>
         </div>
 
         <div className="space-y-4">
